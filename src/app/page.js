@@ -149,9 +149,11 @@ export default function Home() {
       case "ExtAccessory":
         lockSelected = 7;
         break;
+      case "SELECT":
+        lockSelected = 0;
+        break;
       default:
         lockSelected = 0;
-        console.log("Selected lock is invalid.");
         break;
     }
 
@@ -165,7 +167,7 @@ export default function Home() {
         <h2 className="text-base">safe-locksmith.com</h2>
         <p className="text-base">v1.0</p>
       </div>
-      <div className="flex flex-col text-start mx-auto my-2">
+      <div className="flex flex-col text-start mx-auto my-2 w-50">
         <p className="text-base text-red-500 animated-text">
           <span className="status-dot red mr-1.5"></span>
           {statusData.redStatusMessage}
@@ -182,7 +184,7 @@ export default function Home() {
           <span className="status-dot yellow mr-1.5"></span>
           {statusData.batteryVoltageStatusMessage} {statusData.consumption}
         </p>
-        <div>
+        <div className="text-base text-center">
           <label htmlFor="voltage" className="text-yellow-300">Voltage Meter</label>
           <meter
           className="w-full"
@@ -200,6 +202,7 @@ export default function Home() {
       <div className="flex flex-col space-y-1.5 text-center mx-auto my-2">
         <label htmlFor="lockType">Select Lock Type</label>
         <select name="lockType" id="lockType" ref={lockTypeRef} onChange={lockChanged}>
+          <option value="SELECT">Select Lock Type...</option>
           <option value="ESL5">ESL5</option>
           <option value="ESL10/20">ESL10/20</option>
           <option value="S&G">S&G</option>
