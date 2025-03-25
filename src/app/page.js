@@ -1,6 +1,19 @@
 "use client"
 
-import { useEffect, useRef, use } from "react";
+import { useEffect, useRef, useReducer } from "react";
+
+const statusInitialState = {
+  redStatusMessage: "...",
+  greenStatusMessage: "...",
+  whiteStatusMessage: "...",
+  batteryVoltageStatusMessage: "...",
+  batteryVoltage: 100,
+  consumption: "...",
+};
+
+function statusReducer(_, newState) {
+  return newState;
+}
 
 export default function Home() {
   // Refs for both code input and lock type select so we don't trigger unneeded re-renders.
@@ -8,11 +21,7 @@ export default function Home() {
   const lockTypeRef = useRef(null);
 
   // State data for various pieces of UI.
-  const redStatusText = use("");
-  const greenStatusText = use("");
-  const whiteStatusText = use("");
-  const batteryVoltageStatusMessageText = use("");
-  const consumptionText = use("");
+  const [statusData, setStatusData] = useReducer(statusReducer, statusInitialState);
 
   // Initialize WebSocket for real-time communication with device. Since it involves side-effects,
   // (an external system connection) than useEffect (run once on mount) is appropriate here.
@@ -28,17 +37,17 @@ export default function Home() {
     }
 
     socket.onopen = () => {
-      console.log("Device connected.");
+      console.log("WS connected.");
       startHeartbeat();
     }
 
     socket.onclose = () => {
-      console.log("Device disconnected.");
+      console.log("WS disconnected.");
       stopHeartbeat();
     }
 
-    socket.onerror = (error) => {
-      console.error(`Device connection error: ${error}`);
+    socket.onerror = (e) => {
+      console.error(`WS error occurred.`);
     }
 
     // Cleanup WebSocket when component unmounts
@@ -61,26 +70,64 @@ export default function Home() {
       batteryVoltage: commandPayload.msg5, // number representing voltage
       consumption: commandPayload.msg6, // power consumption text string, milliwatts
     };
-
-    redStatusText.set(commandData.redStatusMessage);
-    greenStatusText.set(commandData.greenStatusMessage);
-    whiteStatusText.set(commandData.whiteStatusMessage);
-    batteryVoltageStatusMessageText.set(commandData.batteryVoltageStatusMessage);
-    consumptionText.set(commandData.consumption);
+    
+    setStatusData(commandData);
   }
 
   const sendCodeToNXDevice = (e) => {
+    const lockSelected = getSelectedLock();
+    const safeCode = codeRef.current.value;
 
+    if (!safeCode) {
+      return;
+    }
+
+    const command = { type: "t_sentnum", value: safeCode, value2: lockSelected };
+    socketRef.current.send(JSON.stringify(command));
   }
 
   const checkLockoutOnNXDevice = (e) => {
+    const lockSelected = getSelectedLock();
 
+    const command = { type: "btn_lockout", value: lockSelected };
+    socketRef.current.send(JSON.stringify(command));
   }
 
   const lockChanged = () => {
+    let lockSelected = getSelectedLock();
+
+    console.log(`Selected lock: ${lockSelected}`);
+    const command = { type: "LED_selected", value: lockSelected };
+    socketRef.current.send(JSON.stringify(command));
+  }
+
+  // Keep-Alive mechanism: Sends a "ping" to device every 2 minutes
+  const startHeartbeat = () => {
+    heartbeatRef.current = setInterval(() => {
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.send("ping");
+      }
+    }, 2 * 60 * 1000);
+  }
+
+  const stopHeartbeat = () => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
+  }
+
+  const handleEnterPressedOnCodeInput = (e) => {
+    if (e.key === "Enter") {
+      sendCodeToNXDevice(e);
+    }
+  }
+
+  // Return the lock number associated with a given lock type.
+  const getSelectedLock = () => {
     let lockSelected = 0;
 
-    switch (lockTypeRef.current) {
+    switch (lockTypeRef.current.value) {
       case "ESL5":
         lockSelected = 1;
         break;
@@ -108,25 +155,7 @@ export default function Home() {
         break;
     }
 
-    console.log(`Selected lock: ${lockSelected}`);
-    const command = { type: "LED_selected", value: lockSelected };
-    socketRef.current.send(JSON.stringify(command));
-  }
-
-  // Keep-Alive mechanism: Sends a "ping" to device every 2 minutes
-  const startHeartbeat = () => {
-    heartbeatRef.current = setInterval(() => {
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        socketRef.current.send("ping");
-      }
-    }, 2 * 60 * 1000);
-  }
-
-  const stopHeartbeat = () => {
-    if (heartbeatRef.current) {
-      clearInterval(heartbeatRef.current);
-      heartbeatRef.current = null;
-    }
+    return lockSelected;
   }
 
   return (
@@ -136,15 +165,37 @@ export default function Home() {
         <h2 className="text-base">safe-locksmith.com</h2>
         <p className="text-base">v1.0</p>
       </div>
-      <div className="flex flex-col space-x-2 text-center mx-auto my-2">
-        <p className="text-base" id="keypadStatus">
-          <span className="status-dot initializing mr-1.5"></span>
-          Keypad initializing
+      <div className="flex flex-col text-start mx-auto my-2">
+        <p className="text-base text-red-500 animated-text">
+          <span className="status-dot red mr-1.5"></span>
+          {statusData.redStatusMessage}
         </p>
-        <p className="text-base" id="powerInfo">
-          <span className="status-dot ok mr-1.5"></span>
-          Battery Voltage 9.0V Consumption 10.0 mW
+        <p className="text-base text-green-500 animated-text">
+          <span className="status-dot green mr-1.5"></span>
+          {statusData.greenStatusMessage}
         </p>
+        <p className="text-base text-white animated-text">
+          <span className="status-dot white mr-1.5"></span>
+          {statusData.whiteStatusMessage}
+        </p>
+        <p className="text-base text-yellow-300 animated-text">
+          <span className="status-dot yellow mr-1.5"></span>
+          {statusData.batteryVoltageStatusMessage} {statusData.consumption}
+        </p>
+        <div>
+          <label htmlFor="voltage" className="text-yellow-300">Voltage Meter</label>
+          <meter
+          className="w-full"
+          id="voltage"
+          min={45}
+          max={100}
+          low={51}
+          high={76}
+          optimum={80}
+          value={statusData.batteryVoltage}
+          >
+          </meter>
+        </div>
       </div>
       <div className="flex flex-col space-y-1.5 text-center mx-auto my-2">
         <label htmlFor="lockType">Select Lock Type</label>
@@ -158,9 +209,9 @@ export default function Home() {
           <option value="ExtAccessory">Ext. Accessory</option>
         </select>
         <label htmlFor="code">Code</label>
-        <input name="code" id="code" type="text" placeholder="e.g. 12345" ref={codeRef}/>
-        <button className="nxbutton mt-4" id="btnSendCode">Send Code</button>
-        <button className="nxbutton" id="btnCheckForLockout">Check For Lockout</button>
+        <input name="code" maxLength={19} id="code" type="text" placeholder="Enter safe code here" ref={codeRef} onKeyDown={handleEnterPressedOnCodeInput}/>
+        <button className="nxbutton mt-4" id="btnSendCode" onClick={sendCodeToNXDevice}>Send Code</button>
+        <button className="nxbutton" id="btnCheckForLockout" onClick={checkLockoutOnNXDevice}>Check For Lockout</button>
       </div>
     </main>
   );
