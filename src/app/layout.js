@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * NXUI - A User interface for NX500 devices and other NexGen Tools products.
+ * Developed for NexGen Tools LLC
+ * Source Code: https://github.com/hoogmin/nexgentoolsnxui
+ * 
+ * Copyright (c) 2025 Javier Martinez
+*/
+
 import { Roboto, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 

@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * NXUI - A User interface for NX500 devices and other NexGen Tools products.
+ * Developed for NexGen Tools LLC
+ * Source Code: https://github.com/hoogmin/nexgentoolsnxui
+ * 
+ * Copyright (c) 2025 Javier Martinez
+*/
+
 "use client"
 
 import { useEffect, useRef, useReducer } from "react";
@@ -167,7 +176,7 @@ export default function Home() {
         <h2 className="text-base">safe-locksmith.com</h2>
         <p className="text-base">v1.0</p>
       </div>
-      <div className="flex flex-col text-start mx-auto my-2 w-50">
+      <div className="flex flex-col text-start mx-auto my-2 w-75">
         <p className="text-base text-red-500 animated-text">
           <span className="status-dot red mr-1.5"></span>
           {statusData.redStatusMessage}
@@ -182,9 +191,13 @@ export default function Home() {
         </p>
         <p className="text-base text-yellow-300 animated-text">
           <span className="status-dot yellow mr-1.5"></span>
-          {statusData.batteryVoltageStatusMessage} {statusData.consumption}
+          {statusData.batteryVoltageStatusMessage}
         </p>
-        <div className="text-base text-center">
+        <p className="text-base text-yellow-300 animated-text">
+          <span className="status-dot yellow mr-1.5"></span>
+          {statusData.consumption}
+        </p>
+        <div className="text-base text-center my-1.5 w-50 place-self-center">
           <label htmlFor="voltage" className="text-yellow-300">Voltage Meter</label>
           <meter
           className="w-full"
