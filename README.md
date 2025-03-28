@@ -7,3 +7,6 @@ that have communication problems between the keypad and the lock, a faulty solen
 then the NX500 can help.
 
 Further details may be found at the official site: [safe-locksmith.com](https://safe-locksmith.com/)
+
+### Interface Preview
+![NX500 User Interface Preview](/appui_preview.png)
